@@ -17,6 +17,7 @@ import { createInterface } from 'node:readline'
 import { captureProxyStderr } from './proxy-stderr.ts'
 import { isDebugLoggingEnabled, logProxyStderr } from './proxy/debug-logger.ts'
 import type { CursorModel } from './proxy/models.ts'
+import type { ProxyReadySignal } from './proxy/proxy-ready.ts'
 
 const PORT_FILE = join(homedir(), '.pi', 'agent', 'cursor-proxy.json')
 const PROXY_ENTRY = resolve(import.meta.dirname, 'proxy', 'main.js')
@@ -172,7 +173,7 @@ async function spawnProxy(sessionId: string, accessToken: string): Promise<{ por
 
   // Read ready signal from stdout
   const rl = createInterface({ input: stdout })
-  let ready: { type: string; port: number; models?: CursorModel[] }
+  let ready: Partial<ProxyReadySignal>
   try {
     const readyLine = await new Promise<string>((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -187,7 +188,7 @@ async function spawnProxy(sessionId: string, accessToken: string): Promise<{ por
         reject(new Error(`Proxy exited with code ${String(code)}`))
       })
     })
-    ready = JSON.parse(readyLine) as { type: string; port: number; models?: CursorModel[] }
+    ready = JSON.parse(readyLine) as Partial<ProxyReadySignal>
     if (ready.type !== 'ready' || !ready.port || !childPid) {
       throw new Error(`Unexpected proxy output: ${readyLine}`)
     }
